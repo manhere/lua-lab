@@ -824,7 +824,15 @@ static int str_format (lua_State *L) {
         }
         case 's': {
           size_t l;
-          const char *s = luaL_checklstring(L, arg, &l);
+          /* lua-lab patch */
+          const char *s;
+          if (!lua_isstring(L, arg)) {
+            lua_getglobal(L, "tostring");
+            lua_pushvalue(L, arg);
+            lua_call(L, 1, 1);
+            lua_replace(L, arg);
+          }
+          s = luaL_checklstring(L, arg, &l);
           if (!strchr(form, '.') && l >= 100) {
             /* no precision and string is too long to be formatted;
                keep original string */

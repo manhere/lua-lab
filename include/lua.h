@@ -17,7 +17,7 @@
 
 
 #define LUA_VERSION	"Lua 5.2"
-#define LUA_RELEASE	"Lua 5.2.0 (work2)"
+#define LUA_RELEASE	"Lua 5.2.0 (work2) (lua-lab patched)"
 #define LUA_VERSION_NUM	502
 #define LUA_COPYRIGHT	LUA_RELEASE "  Copyright (C) 1994-2010 Lua.org, PUC-Rio"
 #define LUA_AUTHORS	"R. Ierusalimschy, L. H. de Figueiredo, W. Celes"

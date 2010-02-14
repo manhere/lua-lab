@@ -14,7 +14,9 @@
 - 编译 Lua 源文件时忽略 UTF-8 的 BOM
 - 支持 UTF-8 字符集及部分本地字符集中非单字节字符(每个字节均在 0x80-0xFE 范围)作为标识符
 - 支持 continue 语句, 作用和 C 相同, 可用在 for, while, repeat 循环中使用
+- 支持 break N 和 continue N 语句, 可跳出 N 层循环
 - 支持 != 运算符, 作用和 ~= 相同
+- string.format 中的 %s 支持输入非字符串变量, 此时将自动获取其 __tostring 元方法的结果
 
 
 * 编译
