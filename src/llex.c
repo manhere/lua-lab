@@ -34,11 +34,11 @@
 
 /* ORDER RESERVED */
 static const char *const luaX_tokens [] = {
-    "and", "break", "do", "else", "elseif",
+    "and", "break", "continue", "do", "else", "elseif",  /* lua-lab patch */
     "end", "false", "for", "function", "if",
     "in", "local", "nil", "not", "or", "repeat",
     "return", "then", "true", "until", "while",
-    "..", "...", "==", ">=", "<=", "~=", "<eof>",
+    "..", "...", "==", ">=", "<=", "~=", "!=", "<eof>",  /* lua-lab patch */
     "<number>", "<name>", "<string>"
 };
 
@@ -407,6 +407,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         if (ls->current != '=') return '>';
         else { next(ls); return TK_GE; }
       }
+      case '!':
       case '~': {
         next(ls);
         if (ls->current != '=') return '~';
