@@ -63,6 +63,10 @@ SOURCE=..\src\lauxlib.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\include\lauxlib.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lbaselib.c
 # End Source File
 # Begin Source File
@@ -228,6 +232,22 @@ SOURCE=..\src\ltm.c
 # Begin Source File
 
 SOURCE=..\src\ltm.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lua.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lua.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\luaconf.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lualib.h
 # End Source File
 # Begin Source File
 

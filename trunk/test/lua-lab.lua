@@ -3,11 +3,11 @@
 
 -- test wide-char variable name
 do
-	local 变量 = 123.456
-	print(变量 .. " = 123.456")
+	local 变量a1 = 123.456
+	print(变量a1 .. " = 123.456")
 end
 
--- test continue statement
+-- test break [N] and continue [N] statement
 do
 	local sum = 0
 	for i = 1, 10 do
@@ -35,6 +35,19 @@ do
 		if i >= 10 then break end
 	until false
 	print(sum .. " = 50")
+
+	local sum = 0
+	for i = 1, 5 do
+		sum = sum + 1
+		while true do
+			sum = sum + i
+			i = i + 1
+			if i == 3 then continue 2 end
+			if i > 5 then break 2 end
+		end
+		sum = sum + 1
+	end
+	print(sum .. " = 20")
 end
 
 -- test != operator
