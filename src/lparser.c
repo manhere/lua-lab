@@ -1304,13 +1304,13 @@ static void instat (LexState *ls, int line) {
   luaX_next(ls);  /* skip IN */
   enterblock(fs, &bl, 0);  /* scope for environment variable */
   new_localvarliteral(ls, "(environment)");
-  fs->envreg = exp1(ls);  /* new environment */
+  fs->envreg = (lu_byte)exp1(ls);  /* new environment */
   adjustlocalvars(ls, 1);
   checknext(ls, TK_DO);
   block(ls);
   leaveblock(fs);
   check_match(ls, TK_END, TK_IN, line);
-  fs->envreg = oldenv;  /* restore outer environment */
+  fs->envreg = (lu_byte)oldenv;  /* restore outer environment */
 }
 
 
