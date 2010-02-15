@@ -1,5 +1,6 @@
 ﻿Lua-Lab
 
+
 * 原则
 
 - 基于官方最新版本, 如果功能与本项目修改的功能有重复或冲突, 以官方版本为主
@@ -17,11 +18,15 @@
 - 支持 break N 和 continue N 语句, 可跳出 N 层循环
 - 支持 != 运算符, 作用和 ~= 相同
 - string.format 中的 %s 支持输入非字符串变量, 此时将自动获取其 __tostring 元方法的结果
+- (Win32平台) string 表增加 mb2wc 及 wc2mb 两个函数, 可用于字符串的字符集转换:
+  str_dst, errmsg = mb2wc(str_src, num_codepage = 0) : codepage 到 UCS2(LE) 的转换
+  str_dst, errmsg = wc2mb(str_src, num_codepage = 0) : UCS2(LE) 到 codepage 的转换
 
 
 * 编译
 
-- 工程文件是 build/lua.dsw, 使用 Visual C++ 6.0 以上打开, 并且编译器要改用 Visual C++ 2010
+- Visual C++ 6.0: 直接打开工程文件 build/lua.dsw 并编译即可. 支持使用 Visual C++ 2010 编译器
+- Visual Studio 2005+: 打开并自动转换工程 build/lua.dsw, 并从各工程中移除 ftol2.* 再编译
 
 
 * 开发者

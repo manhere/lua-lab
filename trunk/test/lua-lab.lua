@@ -51,7 +51,6 @@ do
 end
 
 -- test != operator
-
 do
 	local i = 3
 	if i != 5 then
@@ -59,6 +58,27 @@ do
 	else
 		print "!= != ~="
 	end
+end
+
+-- test %s in string.format with meta function __tostring
+do
+	local t = {}
+	setmetatable(t, { __tostring = function() return "table" end })
+	print(string.format("%s", t) .. " = table")
+end
+
+-- test codepage conversion
+do
+	local src = "ABC字符串"
+	local wstr, err = string.mb2wc(src, 65001)
+	if not wstr then print(string.wc2mb(string.mb2wc(err), 65001)); os.exit(); end
+	io.write(src, " = ")
+	for i = 1, #wstr do
+		io.write(string.format("%02X ", string.byte(wstr, i)))
+	end
+	local dst, err = string.wc2mb(wstr, 65001)
+	if not wstr then print(string.wc2mb(string.mb2wc(err), 65001)); os.exit(); end
+	print("= " .. dst)
 end
 
 -- test hex-number in string (for Lua 5.2)

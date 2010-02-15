@@ -299,7 +299,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     func = tryfuncTM(L, func);  /* check the `function' tag method */
   funcr = savestack(L, func);
   cl = &clvalue(func)->l;
-  L->ci->nresults = nresults;
+  L->ci->nresults = (short)nresults;
   if (!cl->isC) {  /* Lua function? prepare its call */
     CallInfo *ci;
     int nparams, nargs;
@@ -461,7 +461,7 @@ static int recover (lua_State *L, int status) {
   luaD_shrinkstack(L);
   L->errfunc = ci->u.c.old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
-  ci->u.c.status = status;  /* (here it is) */
+  ci->u.c.status = (lu_byte)status;  /* (here it is) */
   return 1;  /* continue running the coroutine */
 }
 

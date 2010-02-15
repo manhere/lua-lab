@@ -29,8 +29,10 @@ typedef struct {
 
 #ifdef LUAC_TRUST_BINARIES
 #define IF(c,s)
+#define DO(s)
 #else
 #define IF(c,s)		if (c) error(S,s)
+#define DO(s)		error(S,s)
 
 static void error(LoadState* S, const char* why)
 {
@@ -122,7 +124,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 	setsvalue2n(S->L,o,LoadString(S));
 	break;
    default:
-	IF (1, "bad constant");
+	DO ("bad constant");
 	break;
   }
  }
@@ -142,8 +144,8 @@ static void LoadUpvalues(LoadState* S, Proto* f)
  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
  for (i=0; i<n; i++)
  {
-  f->upvalues[i].instack=LoadChar(S);
-  f->upvalues[i].idx=LoadChar(S);
+  f->upvalues[i].instack=(lu_byte)LoadChar(S);
+  f->upvalues[i].idx=(lu_byte)LoadChar(S);
  }
 }
 

@@ -126,7 +126,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz, GCObject **list,
   if (list == NULL)
     list = &g->rootgc;  /* standard list for collectable objects */
   gch(o)->marked = luaC_white(g);
-  gch(o)->tt = tt;
+  gch(o)->tt = (lu_byte)tt;
   gch(o)->next = *list;
   *list = o;
   return o;

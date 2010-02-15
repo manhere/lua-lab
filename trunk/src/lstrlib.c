@@ -857,6 +857,93 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
+/* lua-lab patch */
+#if defined(LUA_DL_DLL)
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include "lmem.h"
+
+static void pushnilanderror(lua_State* L)
+{
+	const int error = GetLastError();
+	char buffer[128];
+	lua_pushnil(L);
+	if(FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, buffer, sizeof(buffer), 0))
+		lua_pushstring(L, buffer);
+	else
+		lua_pushfstring(L, "system error %d\n", error);
+}
+
+static int str_mb2wc(lua_State* L)	/* str_dst, errmsg = mb2wc(str_src, num_codepage = 0) */
+{
+	size_t srclen;
+	const char* const src = luaL_checklstring(L, 1, &srclen);
+	const lua_Integer cp = luaL_optinteger(L, 2, 0);
+	if(srclen <= 2000)
+	{
+		WCHAR dst[2000];
+		int dstlen = MultiByteToWideChar((UINT)cp, 0, src, srclen, dst, sizeof(dst) / sizeof(*dst));
+		if(dstlen <= 0 && srclen > 0)
+		{
+			pushnilanderror(L);
+			return 2;
+		}
+		lua_pushlstring(L, (const char*)dst, dstlen * sizeof(WCHAR));
+		return 1;
+	}
+	else
+	{
+		WCHAR* const dst = luaM_malloc(L, srclen * sizeof(WCHAR));
+		int dstlen = MultiByteToWideChar((UINT)cp, 0, src, srclen, dst, srclen);
+		if(dstlen <= 0 && srclen > 0)
+		{
+			luaM_free(L, dst);
+			pushnilanderror(L);
+			return 2;
+		}
+		lua_pushlstring(L, (const char*)dst, dstlen * sizeof(WCHAR));
+		luaM_free(L, dst);
+		return 1;
+	}
+}
+
+static int str_wc2mb(lua_State* L)	/* str_dst, errmsg = wc2mb(str_src, num_codepage = 0) */
+{
+	size_t srclen;
+	const char* const src = luaL_checklstring(L, 1, &srclen);
+	const lua_Integer cp = luaL_optinteger(L, 2, 0);
+	srclen /= 2;
+	if(srclen <= 1333)
+	{
+		char dst[4000];
+		const int dstlen = WideCharToMultiByte((UINT)cp, 0, (LPCWSTR)src, srclen, dst, sizeof(dst), 0, 0);
+		if(dstlen <= 0 && srclen > 0)
+		{
+			pushnilanderror(L);
+			return 2;
+		}
+		lua_pushlstring(L, dst, dstlen);
+		return 1;
+	}
+	else
+	{
+		char* const dst = luaM_malloc(L, srclen * 3);
+		const int dstlen = WideCharToMultiByte((UINT)cp, 0, (LPCWSTR)src, srclen, dst, srclen * 3, 0, 0);
+		if(dstlen <= 0 && srclen > 0)
+		{
+			luaM_free(L, dst);
+			pushnilanderror(L);
+			return 2;
+		}
+		lua_pushlstring(L, dst, dstlen);
+		luaM_free(L, dst);
+		return 1;
+	}
+}
+
+#endif
+
 
 static const luaL_Reg strlib[] = {
   {"byte", str_byte},
@@ -874,6 +961,11 @@ static const luaL_Reg strlib[] = {
   {"reverse", str_reverse},
   {"sub", str_sub},
   {"upper", str_upper},
+/* lua-lab patch */
+#if defined(LUA_DL_DLL)
+  {"mb2wc", str_mb2wc},
+  {"wc2mb", str_wc2mb},
+#endif
   {NULL, NULL}
 };
 
