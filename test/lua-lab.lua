@@ -60,6 +60,12 @@ do
 	end
 end
 
+-- test set in table
+do
+	local t = { ["one"], ["two"], }
+	print(tostring(t.two) .. " = true")
+end
+
 -- test %s in string.format with meta function __tostring
 do
 	local t = {}

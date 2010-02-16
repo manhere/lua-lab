@@ -23,4 +23,4 @@ Here is a one-line summary of each program:
    trace-calls.lua	trace calls
    trace-globals.lua	trace assigments to global variables
    xd.lua		hex dump
-
+   lua-lab.lua		test for lua-lab patch
