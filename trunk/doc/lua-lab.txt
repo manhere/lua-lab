@@ -1,4 +1,4 @@
-﻿Lua-Lab
+﻿Lua-Lab (update: 2010-02-16)
 
 
 * 原则
@@ -17,6 +17,7 @@
 - 支持 continue 语句, 作用和 C 相同, 可用在 for, while, repeat 循环中使用
 - 支持 break N 和 continue N 语句, 可跳出 N 层循环
 - 支持 != 运算符, 作用和 ~= 相同
+- 支持 table 中简化描述 set 结构的表达, 即 { [key] = true } 可以简化为 { [key] }
 - string.format 中的 %s 支持输入非字符串变量, 此时将自动获取其 __tostring 元方法的结果
 - (Win32平台) string 表增加 mb2wc 及 wc2mb 两个函数, 可用于字符串的字符集转换:
   str_dst, errmsg = mb2wc(str_src, num_codepage = 0) : codepage 到 UCS2(LE) 的转换
@@ -38,3 +39,8 @@
 
 - Lua 官方版本: http://lua.org
 - 部分修改参考自: http://lua-users.org/wiki/LuaPowerPatches
+
+
+* 许可(License)
+
+- MIT license, 具体见 readme.html 中的 License

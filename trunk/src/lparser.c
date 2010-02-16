@@ -499,9 +499,16 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   else  /* ls->t.token == '[' */
     yindex(ls, &key);
   cc->nh++;
-  checknext(ls, '=');
-  rkkey = luaK_exp2RK(fs, &key);
-  expr(ls, &val);
+  /* lua-lab patch */
+  if (ls->t.token == '=') {
+    luaX_next(ls);
+    rkkey = luaK_exp2RK(fs, &key);
+    expr(ls, &val);
+  }
+  else {
+    rkkey = luaK_exp2RK(fs, &key);
+    init_exp(&val, VTRUE, 0);
+  }
   luaK_codeABC(fs, OP_SETTABLE, cc->t->u.s.info, rkkey, luaK_exp2RK(fs, &val));
   fs->freereg = reg;  /* free registers */
 }
