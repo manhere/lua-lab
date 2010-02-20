@@ -129,3 +129,4 @@ luaopen_bit
 luaopen_math
 luaopen_debug
 luaopen_package
+luaopen_buffer
