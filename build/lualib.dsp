@@ -75,6 +75,10 @@ SOURCE=..\src\lbitlib.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lbuflib.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lcode.c
 # End Source File
 # Begin Source File
