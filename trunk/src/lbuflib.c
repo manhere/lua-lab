@@ -3,6 +3,7 @@
 #define LUA_LIB
 
 #include <stdlib.h>
+#include <string.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -17,12 +18,26 @@ typedef struct
 	lua_Integer cap;
 }lua_Buffer;
 
+/* L != 0, buffer != 0, len >= 0 */
+static void change_len(lua_State* L, lua_Buffer* buffer, lua_Integer len)
+{
+	if(len > buffer->cap)
+	{
+		lua_Integer cap = buffer->cap;
+		do cap *= 2; while(cap < len);
+		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
+		buffer->cap = cap;
+	}
+	buffer->len = len;
+}
+
+/* n >= 0, pi != 0, pj != 0 */
 static void convert_pos(lua_Integer n, lua_Integer* pi, lua_Integer* pj)
 {
 	lua_Integer i = *pi - 1;
 	lua_Integer j = *pj;
-	if(i < 0) { i = n + i + 1;      if(i < 0) i = 0; }
-	if(j < 0)   j = n + j + 1; else if(j > n) j = n;
+	if(i < 0) { i += n + 1;      if(i < 0) i = 0; }
+	if(j < 0)   j += n + 1; else if(j > n) j = n;
 	if((j -= i) < 0) j = 0;
 	*pi = i;
 	*pj = j;
@@ -32,41 +47,40 @@ static void convert_pos(lua_Integer n, lua_Integer* pi, lua_Integer* pj)
 static int buf_new(lua_State* L)
 {
 	lua_Buffer* buffer;
-	lua_Buffer srcbuf;
+	const unsigned char* src;
 	lua_Integer i, j, n;
 	if(lua_isnil(L, 1))
 	{
-new_:	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
+		buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
 		buffer->data = luaM_malloc(L, INIT_BUFFER_SIZE);
 		buffer->len = 0;
 		buffer->cap = INIT_BUFFER_SIZE;
-		luaL_getmetatable(L, LUA_BUFFERPOINTER);
+		luaL_getmetatable(L, LUA_BUFFERSTRUCT);
 		lua_setmetatable(L, -2);
 		return 1;
 	}
-	buffer = luaL_testudata(L, 1, LUA_BUFFERPOINTER);
+	buffer = luaL_testudata(L, 1, LUA_BUFFERSTRUCT);
 	if(buffer)
 	{
-		srcbuf.data = buffer->data;
-		srcbuf.len = buffer->len;
+		src = buffer->data;
+		n = buffer->len;
 	}
 	else
 	{
 		size_t srclen;
-		srcbuf.data = (unsigned char*)lua_tolstring(L, 1, &srclen);
-		if(!srcbuf.data) goto new_;
-		srcbuf.len = (lua_Integer)srclen;
+		src = (unsigned char*)luaL_checklstring(L, 1, &srclen);
+		n = (lua_Integer)srclen;
 	}
-	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
 	i = luaL_optinteger(L, 2, 1);
 	j = luaL_optinteger(L, 3, -1);
-	convert_pos(srcbuf.len, &i, &j);
+	convert_pos(n, &i, &j);
 	for(n = INIT_BUFFER_SIZE; n < j;) n *= 2;
+	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
 	buffer->data = luaM_malloc(L, n);
 	buffer->len = j;
 	buffer->cap = n;
-	memcpy(buffer->data, srcbuf.data + i, j);
-	luaL_getmetatable(L, LUA_BUFFERPOINTER);
+	memcpy(buffer->data, src + i, j);
+	luaL_getmetatable(L, LUA_BUFFERSTRUCT);
 	lua_setmetatable(L, -2);
 	return 1;
 }
@@ -74,8 +88,8 @@ new_:	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
 /* buffer:lower() */
 static int buf_lower(lua_State* L)
 {
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer i;
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
 	for(i = 0; i < buffer->len; ++i)
 		buffer->data[i] = (unsigned char)tolower(buffer->data[i]);
 	return 0;
@@ -84,18 +98,24 @@ static int buf_lower(lua_State* L)
 /* buffer:upper() */
 static int buf_upper(lua_State* L)
 {
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer i;
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
 	for(i = 0; i < buffer->len; ++i)
 		buffer->data[i] = (unsigned char)toupper(buffer->data[i]);
 	return 0;
 }
 
-/* buffer:reserve(n) */
+/* nil|n = buffer:reserve(n|nil) */
 static int buf_reserve(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
-	lua_Integer cap = luaL_checkinteger(L, 2);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_Integer cap;
+	if(lua_isnil(L, 2))
+	{
+		lua_pushinteger(L, buffer->cap);
+		return 1;
+	}
+	cap = luaL_checkinteger(L, 2);
 	if(cap >= (lua_Integer)buffer->len && cap != (lua_Integer)buffer->cap)
 	{
 		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
@@ -107,24 +127,32 @@ static int buf_reserve(lua_State* L)
 /* buffer:resize(n) */
 static int buf_resize(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer len = luaL_checkinteger(L, 2);
 	if(len < 0) len = 0;
-	if(len > buffer->cap)
-	{
-		lua_Integer cap = buffer->cap;
-		do cap *= 2; while(cap < len);
-		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
-		buffer->cap = cap;
-	}
-	buffer->len = len;
+	change_len(L, buffer, len);
 	return 0;
+}
+
+/* n = buffer:len() */
+static int buf_len(lua_State* L)
+{
+	lua_pushinteger(L, ((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERSTRUCT))->len);
+	return 1;
+}
+
+/* string = buffer:tostring() */
+static int buf_tostring(lua_State* L)
+{
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_pushlstring(L, (const char*)buffer->data, buffer->len);
+	return 1;
 }
 
 /* string = buffer:sub(i, [j = -1]) */
 static int buf_sub(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer i = luaL_checkinteger(L, 2);
 	lua_Integer j = luaL_optinteger(L, 3, -1);
 	convert_pos(buffer->len, &i, &j);
@@ -135,11 +163,11 @@ static int buf_sub(lua_State* L)
 /* buffer:fill([i_dst = 1, [j_dst = -1]], buffer|string) */
 static int buf_fill(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer dsti, dstj;
 	int i;
 	lua_Buffer* srcbuf;
-	const void* src;
+	const unsigned char* src;
 	lua_Integer srclen;
 	if(lua_isnumber(L, 2))
 	{
@@ -148,7 +176,7 @@ static int buf_fill(lua_State* L)
 		else				   { dstj = -1;					 i = 3;	}
 	}	else		 { dsti = 1; dstj = -1;					 i = 2; }
 	convert_pos(buffer->len, &dsti, &dstj);
-	srcbuf = luaL_testudata(L, i, LUA_BUFFERPOINTER);
+	srcbuf = luaL_testudata(L, i, LUA_BUFFERSTRUCT);
 	if(srcbuf)
 	{
 		src = srcbuf->data;
@@ -157,15 +185,20 @@ static int buf_fill(lua_State* L)
 	else
 	{
 		size_t len;
-		src = luaL_checklstring(L, i, &len);
+		src = (unsigned char*)luaL_checklstring(L, i, &len);
 		srclen = (lua_Integer)len;
 	}
-	while(dstj > 0)
+	if(srclen == 1)
+		memset(buffer->data + dsti, *src, dstj);
+	else if(srclen > 1)
 	{
-		size_t len = (dstj < srclen ? dstj : srclen);
-		memcpy(buffer->data + dsti, src, len);
-		dsti += len;
-		dstj -= len;
+		while(dstj > srclen)
+		{
+			memcpy(buffer->data + dsti, src, srclen);
+			dsti += srclen;
+			dstj -= srclen;
+		}
+		memcpy(buffer->data + dsti, src, dstj);
 	}
 	return 0;
 }
@@ -191,10 +224,10 @@ static int buf_newindex(lua_State* L)
 /* buffer = buffer:__concat(buffer|string) */
 static int buf_concat(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
-	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERSTRUCT);
 	const void* src;
-	lua_Integer srclen, alllen;
+	lua_Integer srclen;
 	if(srcbuf)
 	{
 		src = srcbuf->data;
@@ -206,32 +239,17 @@ static int buf_concat(lua_State* L)
 		src = luaL_checklstring(L, 2, &len);
 		srclen = (lua_Integer)len;
 	}
-	alllen = buffer->len + srclen;
-	if(alllen > buffer->cap)
-	{
-		lua_Integer cap = buffer->cap;
-		do cap *= 2; while(cap < alllen);
-		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
-		buffer->cap = cap;
-	}
+	change_len(L, buffer, buffer->len + srclen);
 	memcpy(buffer->data + buffer->len, src, srclen);
-	buffer->len = alllen;
 	lua_pushvalue(L, 1);
-	return 1;
-}
-
-/* n = buffer:__len() */
-static int buf_len(lua_State* L)
-{
-	lua_pushinteger(L, ((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERPOINTER))->len);
 	return 1;
 }
 
 /* b = buffer:__eq(buffer|string) */
 static int buf_eq(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
-	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERSTRUCT);
 	const void* src;
 	lua_Integer srclen;
 	if(srcbuf)
@@ -252,8 +270,8 @@ static int buf_eq(lua_State* L)
 /* b = buffer:__lt(buffer|string) */
 static int buf_lt(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
-	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERSTRUCT);
 	const void* src;
 	lua_Integer srclen;
 	if(srcbuf)
@@ -267,15 +285,15 @@ static int buf_lt(lua_State* L)
 		src = luaL_checklstring(L, 2, &len);
 		srclen = (lua_Integer)len;
 	}
-	lua_pushboolean(L, memcmp(buffer->data, src, (buffer->len < srclen ? buffer->len : srclen)) < 0 || buffer->len < srclen);
+	lua_pushboolean(L, memcmp(buffer->data, src, (buffer->len < srclen ? buffer->len : srclen)) - (buffer->len < srclen) < 0);
 	return 1;
 }
 
 /* b = buffer:__le(buffer|string) */
 static int buf_le(lua_State* L)
 {
-	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERPOINTER);
-	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERPOINTER);
+	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
+	lua_Buffer* srcbuf = luaL_testudata(L, 2, LUA_BUFFERSTRUCT);
 	const void* src;
 	lua_Integer srclen;
 	if(srcbuf)
@@ -289,14 +307,14 @@ static int buf_le(lua_State* L)
 		src = luaL_checklstring(L, 2, &len);
 		srclen = (lua_Integer)len;
 	}
-	lua_pushboolean(L, memcmp(buffer->data, src, (buffer->len < srclen ? buffer->len : srclen)) < 0 || buffer->len <= srclen);
+	lua_pushboolean(L, memcmp(buffer->data, src, (buffer->len < srclen ? buffer->len : srclen)) - (buffer->len <= srclen) < 0);
 	return 1;
 }
 
 /* buffer:__gc() */
 static int buf_gc(lua_State* L)
 {
-	luaM_free(L, ((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERPOINTER))->data);
+	luaM_free(L, ((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERSTRUCT))->data);
 	return 0;
 }
 
@@ -307,6 +325,8 @@ static const luaL_Reg buflib[] =
 	{"upper", buf_upper},
 	{"reserve", buf_reserve},
 	{"resize", buf_resize},
+	{"len", buf_len},
+	{"tostring", buf_tostring},
 	{"sub", buf_sub},
 	{"fill", buf_fill},
 	{"copy", buf_copy},
@@ -319,6 +339,8 @@ static const luaL_Reg bufmeta[] =
 	{"upper", buf_upper},
 	{"reserve", buf_reserve},
 	{"resize", buf_resize},
+	{"len", buf_len},
+	{"tostring", buf_tostring},
 	{"sub", buf_sub},
 	{"fill", buf_fill},
 	{"copy", buf_copy},
@@ -326,6 +348,7 @@ static const luaL_Reg bufmeta[] =
 	{"__newindex", buf_newindex},
 	{"__concat", buf_concat},
 	{"__len", buf_len},
+	{"__tostring", buf_tostring},
 	{"__eq", buf_eq},
 	{"__lt", buf_lt},
 	{"__le", buf_le},
@@ -336,7 +359,7 @@ static const luaL_Reg bufmeta[] =
 LUAMOD_API int luaopen_buffer(lua_State* L)
 {
 	luaL_register(L, LUA_BUFLIBNAME, buflib);
-	luaL_newmetatable(L, LUA_BUFFERPOINTER);
+	luaL_newmetatable(L, LUA_BUFFERSTRUCT);
 	luaL_register(L, NULL, bufmeta);
 	lua_pop(L, 1);
 	return 1;

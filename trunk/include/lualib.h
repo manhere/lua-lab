@@ -13,7 +13,7 @@
 
 /* Key to file-handle type */
 #define LUA_FILEHANDLE		"FILE*"
-#define LUA_BUFFERPOINTER	"BUFFER*"
+#define LUA_BUFFERSTRUCT	"BUFFER"
 
 #define LUA_COLIBNAME	"coroutine"
 LUAMOD_API int (luaopen_base) (lua_State *L);
