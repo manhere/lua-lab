@@ -1,4 +1,4 @@
-﻿Lua-Lab (update: 2010-02-20)
+﻿Lua-Lab (update: 2010-02-21)
 
 
 * 原则
@@ -22,7 +22,7 @@
 - (Win32平台) string 表增加 mb2wc 及 wc2mb 两个函数, 可用于字符串的字符集转换:
   str_dst, errmsg = mb2wc(str_src, num_codepage = 0) : codepage 到 UCS2(LE) 的转换
   str_dst, errmsg = wc2mb(str_src, num_codepage = 0) : UCS2(LE) 到 codepage 的转换
-- 增加 buffer 扩展库, 用于操作可修改的字节数组, 以弥补 string 类型的某些不足 (尚未完整实现)
+- 增加 buffer 扩展库, 用于操作可修改的字节数组, 以弥补 string 类型的某些不足
 
 
 * 编译
