@@ -42,20 +42,27 @@ static void convert_pos(lua_Integer n, lua_Integer* pi, lua_Integer* pj)
 	*pj = j;
 }
 
-/* buffer = buffer.new([table], [string|buffer, [i = 1, [j = -1]]]) */
+/* buffer = buffer.new([dummy_table,] [reserve_size,] [string|buffer [, i = 1 [, j = -1]]]) */
 static int buf_new(lua_State* L)
 {
 	lua_Buffer* buffer;
 	const unsigned char* src;
-	lua_Integer i, j, n;
+	lua_Integer i, j, n, cap = INIT_BUFFER_SIZE;
 	if(lua_istable(L, 1))
 		lua_remove(L, 1);
+	if(lua_gettop(L) > 0 && lua_isnumber(L, 1))
+	{
+		cap = lua_tointeger(L, 1);
+		if(cap <= 0) cap = INIT_BUFFER_SIZE;
+		lua_remove(L, 1);
+	}
+
 	if(lua_gettop(L) <= 0)
 	{
 		buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
-		buffer->data = luaM_malloc(L, INIT_BUFFER_SIZE);
+		buffer->data = luaM_malloc(L, cap);
 		buffer->len = 0;
-		buffer->cap = INIT_BUFFER_SIZE;
+		buffer->cap = cap;
 		luaL_getmetatable(L, LUA_BUFFERSTRUCT);
 		lua_setmetatable(L, -2);
 		return 1;
@@ -75,11 +82,11 @@ static int buf_new(lua_State* L)
 	i = luaL_optinteger(L, 2, 1);
 	j = luaL_optinteger(L, 3, -1);
 	convert_pos(n, &i, &j);
-	for(n = INIT_BUFFER_SIZE; n < j;) n *= 2;
+	while(cap < j) cap *= 2;
 	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
-	buffer->data = luaM_malloc(L, n);
+	buffer->data = luaM_malloc(L, cap);
 	buffer->len = j;
-	buffer->cap = n;
+	buffer->cap = cap;
 	memcpy(buffer->data, src + i, j);
 	luaL_getmetatable(L, LUA_BUFFERSTRUCT);
 	lua_setmetatable(L, -2);
@@ -179,7 +186,7 @@ static int buf_append(lua_State* L)
 	return 1;
 }
 
-/* string = buffer:sub(i, [j = -1]) */
+/* string = buffer:sub(i [, j = -1]) */
 static int buf_sub(lua_State* L)
 {
 	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
@@ -190,7 +197,7 @@ static int buf_sub(lua_State* L)
 	return 1;
 }
 
-/* buffer:fill([i_dst = 1, [j_dst = -1]], buffer|string) */
+/* buffer:fill([i_dst = 1 [, j_dst = -1],] buffer|string) */
 static int buf_fill(lua_State* L)
 {
 	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
@@ -233,7 +240,7 @@ static int buf_fill(lua_State* L)
 	return 0;
 }
 
-/* buffer:copy([i_src = 1], buffer|string, [i_src = 1, [j_src = -1]]) */
+/* buffer:copy([i_src = 1,] buffer|string [, i_src = 1 [, j_src = -1]]) */
 static int buf_copy(lua_State* L)
 {
 	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
