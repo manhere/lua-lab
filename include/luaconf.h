@@ -206,7 +206,9 @@
 
 
 
-
+#ifndef LUA_COMPAT_ALL
+#define LUA_COMPAT_ALL
+#endif
 
 /*
 ** {==================================================================
@@ -253,6 +255,8 @@
 ** library.
 */
 #define LUA_COMPAT_DEBUGLIB
+
+#define LUA_COMPAT_IPAIRS
 
 /*
 @@ The following macros supply trivial compatibility for some
