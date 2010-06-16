@@ -264,7 +264,7 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
 
 static void kname (Proto *p, int c, int reg, const char *what,
                    const char **name) {
-  if (c == reg && *what == 'c')
+  if (c == reg && what != NULL && *what == 'c')
     return;  /* index is a constant; name already correct */
   else if (ISK(c) && ttisstring(&p->k[INDEXK(c)]))
     *name = svalue(&p->k[INDEXK(c)]);
