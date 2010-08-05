@@ -1,5 +1,5 @@
 /*
-** $Id: lualib.h,v 1.39 2009/11/24 12:05:44 roberto Exp $
+** $Id: lualib.h,v 1.40 2010/06/10 21:29:47 roberto Exp $
 ** Lua standard libraries
 ** See Copyright Notice in lua.h
 */
@@ -13,10 +13,13 @@
 
 /* Key to file-handle type */
 #define LUA_FILEHANDLE		"FILE*"
-#define LUA_BUFFERSTRUCT	"BUFFER"
+#define LUA_BUFFERSTRUCT	"BUFFER"  /* lua-lab: */
+
+
+LUAMOD_API int (luaopen_base) (lua_State *L);
 
 #define LUA_COLIBNAME	"coroutine"
-LUAMOD_API int (luaopen_base) (lua_State *L);
+LUAMOD_API int (luaopen_coroutine) (lua_State *L);
 
 #define LUA_TABLIBNAME	"table"
 LUAMOD_API int (luaopen_table) (lua_State *L);
@@ -42,7 +45,7 @@ LUAMOD_API int (luaopen_debug) (lua_State *L);
 #define LUA_LOADLIBNAME	"package"
 LUAMOD_API int (luaopen_package) (lua_State *L);
 
-#define LUA_BUFLIBNAME	"buffer"
+#define LUA_BUFLIBNAME	"buffer"  /* lua-lab: */
 LUAMOD_API int (luaopen_buffer) (lua_State *L);
 
 

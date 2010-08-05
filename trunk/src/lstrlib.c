@@ -1,5 +1,5 @@
 /*
-** $Id: lstrlib.c,v 1.152 2010/05/04 17:20:33 roberto Exp $
+** $Id: lstrlib.c,v 1.154 2010/07/02 11:38:13 roberto Exp $
 ** Standard library for string operations and pattern-matching
 ** See Copyright Notice in lua.h
 */
@@ -83,7 +83,7 @@ static int str_lower (lua_State *L) {
   const char *s = luaL_checklstring(L, 1, &l);
   char *p = luaL_buffinitsize(L, &b, l);
   for (i=0; i<l; i++)
-    p[i] = (char)tolower(uchar(s[i]));
+    p[i] = tolower(uchar(s[i]));
   luaL_pushresultsize(&b, l);
   return 1;
 }
@@ -96,7 +96,7 @@ static int str_upper (lua_State *L) {
   const char *s = luaL_checklstring(L, 1, &l);
   char *p = luaL_buffinitsize(L, &b, l);
   for (i=0; i<l; i++)
-    p[i] = (char)toupper(uchar(s[i]));
+    p[i] = toupper(uchar(s[i]));
   luaL_pushresultsize(&b, l);
   return 1;
 }
@@ -241,6 +241,7 @@ static int match_class (int c, int cl) {
     case 'a' : res = isalpha(c); break;
     case 'c' : res = iscntrl(c); break;
     case 'd' : res = isdigit(c); break;
+    case 'g' : res = isgraph(c); break;
     case 'l' : res = islower(c); break;
     case 'p' : res = ispunct(c); break;
     case 's' : res = isspace(c); break;
@@ -848,8 +849,7 @@ static int str_format (lua_State *L) {
         }
         case 's': {
           size_t l;
-          /* lua-lab patch */
-          const char *s;
+          const char *s;  /* lua-lab: */
           if (!lua_isstring(L, arg)) {
             lua_getglobal(L, "tostring");
             lua_pushvalue(L, arg);
@@ -881,10 +881,8 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
-/* }====================================================== */
 
-/* lua-lab patch */
-#if defined(LUA_DL_DLL)
+#if defined(LUA_DL_DLL)  /* lua-lab: */
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -970,6 +968,8 @@ static int str_wc2mb(lua_State* L)	/* str_dst, errmsg = wc2mb(str_src, num_codep
 
 #endif
 
+/* }====================================================== */
+
 
 static const luaL_Reg strlib[] = {
   {"byte", str_byte},
@@ -987,8 +987,7 @@ static const luaL_Reg strlib[] = {
   {"reverse", str_reverse},
   {"sub", str_sub},
   {"upper", str_upper},
-/* lua-lab patch */
-#if defined(LUA_DL_DLL)
+#if defined(LUA_DL_DLL)  /* lua-lab: */
   {"mb2wc", str_mb2wc},
   {"wc2mb", str_wc2mb},
 #endif
@@ -1012,7 +1011,7 @@ static void createmetatable (lua_State *L) {
 ** Open string library
 */
 LUAMOD_API int luaopen_string (lua_State *L) {
-  luaL_register(L, LUA_STRLIBNAME, strlib);
+  luaL_newlib(L, strlib);
   createmetatable(L);
   return 1;
 }

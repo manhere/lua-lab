@@ -1,4 +1,4 @@
-﻿Lua-Lab (update: 2010-05-21) (based on Lua 5.2.0-work3)
+﻿Lua-Lab (update: 2010-08-05) (based on Lua 5.2.0-work4)
 
 
 * 原则

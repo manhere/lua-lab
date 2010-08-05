@@ -87,6 +87,10 @@ SOURCE=..\src\lcode.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lcorolib.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lctype.c
 # End Source File
 # Begin Source File
