@@ -46,8 +46,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 ..\lib\lualib.lib /nologo /subsystem:console /machine:I386 /out:"../bin/luac.exe" /LTCG
-# SUBTRACT LINK32 /pdb:none
+# ADD LINK32 ..\lib\lualib.lib /nologo /subsystem:console /pdb:none /machine:I386 /out:"../bin/luac.exe" /LTCG /FIXED
 # Begin Target
 
 # Name "luac - Win32 Release"

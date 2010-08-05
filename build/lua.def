@@ -19,8 +19,8 @@ lua_iscfunction
 lua_isuserdata
 lua_type
 lua_typename
-lua_tonumber
-lua_tointeger
+lua_tonumberx
+lua_tointegerx
 lua_toboolean
 lua_tolstring
 lua_rawlen
@@ -49,13 +49,13 @@ lua_rawgeti
 lua_createtable
 lua_newuserdata
 lua_getmetatable
-lua_getenv
+lua_getuservalue
 lua_settable
 lua_setfield
 lua_rawset
 lua_rawseti
 lua_setmetatable
-lua_setenv
+lua_setuservalue
 lua_callk
 lua_getctx
 lua_pcallk
@@ -86,6 +86,9 @@ lua_gethookcount
 lua_absindex
 luaL_checkversion_
 luaL_openlib
+luaL_setfuncs
+luaL_requiref
+luaL_pushmodule
 luaL_getmetafield
 luaL_callmeta
 luaL_typeerror
@@ -132,4 +135,5 @@ luaopen_bit
 luaopen_math
 luaopen_debug
 luaopen_package
+luaopen_coroutine
 luaopen_buffer

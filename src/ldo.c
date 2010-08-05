@@ -1,5 +1,5 @@
 /*
-** $Id: ldo.c,v 2.87 2010/05/05 18:49:56 roberto Exp $
+** $Id: ldo.c,v 2.88 2010/06/04 13:06:15 roberto Exp $
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
 */
@@ -299,7 +299,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
   if (!ttisfunction(func)) /* `func' is not a function? */
     func = tryfuncTM(L, func);  /* check the `function' tag method */
   funcr = savestack(L, func);
-  L->ci->nresults = (short)nresults;
+  L->ci->nresults = nresults;
   if (ttislcf(func)) {  /* light C function? */
     f = fvalue(func);  /* get it */
     goto isCfunc;  /* go to call it */
@@ -468,7 +468,7 @@ static int recover (lua_State *L, int status) {
   luaD_shrinkstack(L);
   L->errfunc = ci->u.c.old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
-  ci->u.c.status = (lu_byte)status;  /* (here it is) */
+  ci->u.c.status = status;  /* (here it is) */
   return 1;  /* continue running the coroutine */
 }
 
@@ -630,8 +630,7 @@ static void f_parser (lua_State *L, void *ud) {
            : luaY_parser(L, p->z, &p->buff, &p->varl, p->name);
   setptvalue2s(L, L->top, tf);
   incr_top(L);
-  cl = luaF_newLclosure(L, tf->sizeupvalues);
-  cl->l.p = tf;
+  cl = luaF_newLclosure(L, tf);
   setclvalue(L, L->top - 1, cl);
   for (i = 0; i < tf->sizeupvalues; i++)  /* initialize upvalues */
     cl->l.upvals[i] = luaF_newupval(L);

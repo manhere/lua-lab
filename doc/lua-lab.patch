@@ -1,21 +1,21 @@
 --- lauxlib.c	Thu Jan 15 17:14:12 1970
 +++ lauxlib.c	Thu Jan 15 17:14:12 1970
-@@ -525,6 +525,15 @@
-     if (lf.f == NULL) return errfile(L, "open", fnameindex);
-   }
-   c = getc(lf.f);
-+  if (c == 0xef) {  /* skip UTF-8 bom */
-+    if (getc(lf.f) != 0xbb) {
-+      fseek(lf.f, -1, SEEK_CUR);
+@@ -519,6 +519,15 @@
+ */
+ static int skipcomment (FILE *f, int *cp) {
+   int c = *cp = getc(f);
++  if (c == 0xef) {  /* lua-lab: skip UTF-8 BOM */
++    if (getc(f) != 0xbb) {
++      fseek(f, -1, SEEK_CUR);
 +    }
-+    else if (getc(lf.f) != 0xbf) {
-+      fseek(lf.f, -2, SEEK_CUR);
++    else if (getc(f) != 0xbf) {
++      fseek(f, -2, SEEK_CUR);
 +    }
-+    else c = getc(lf.f);
++    else c = *cp = getc(f);
 +  }
-   if (c == '#') {  /* Unix exec. file? */
-     while ((c = getc(lf.f)) != EOF && c != '\n') ;  /* skip first line */
-   }
+   if (c == '#') {  /* first line is a comment (Unix exec. file)? */
+     while ((c = getc(f)) != EOF && c != '\n') ;  /* skip first line */
+     *cp = getc(f);  /* skip end-of-line */
 --- lctype.c	Thu Jan 15 17:14:12 1970
 +++ lctype.c	Thu Jan 15 17:14:12 1970
 @@ -26,20 +26,20 @@
@@ -38,7 +38,7 @@
 -  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,
 -  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,
 -  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,
-+  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,
++  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  /* lua-lab: */
 +  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,
 +  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,
 +  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,
@@ -55,56 +55,16 @@
 +  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,
 +  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x01,  0x00,
  };
---- ldo.c	Thu Jan 15 17:14:12 1970
-+++ ldo.c	Thu Jan 15 17:14:12 1970
-@@ -299,7 +299,7 @@
-   if (!ttisfunction(func)) /* `func' is not a function? */
-     func = tryfuncTM(L, func);  /* check the `function' tag method */
-   funcr = savestack(L, func);
--  L->ci->nresults = nresults;
-+  L->ci->nresults = (short)nresults;
-   if (ttislcf(func)) {  /* light C function? */
-     f = fvalue(func);  /* get it */
-     goto isCfunc;  /* go to call it */
-@@ -468,7 +468,7 @@
-   luaD_shrinkstack(L);
-   L->errfunc = ci->u.c.old_errfunc;
-   ci->callstatus |= CIST_STAT;  /* call has error status */
--  ci->u.c.status = status;  /* (here it is) */
-+  ci->u.c.status = (lu_byte)status;  /* (here it is) */
-   return 1;  /* continue running the coroutine */
- }
- 
---- lgc.c	Thu Jan 15 17:14:12 1970
-+++ lgc.c	Thu Jan 15 17:14:12 1970
-@@ -188,7 +188,7 @@
-   if (list == NULL)
-     list = &g->allgc;  /* standard list for collectable objects */
-   gch(o)->marked = luaC_white(g);
--  gch(o)->tt = tt;
-+  gch(o)->tt = (lu_byte)tt;
-   gch(o)->next = *list;
-   *list = o;
-   return o;
-@@ -988,7 +988,7 @@
-     /* generational mode must always start in propagate phase */
-     luaC_runtilstate(L, bitmask(GCSpropagate));
-   }
--  g->gckind = origkind;
-+  g->gckind = (lu_byte)origkind;
-   g->GCdebt = stddebt(g);
-   if (!isemergency)   /* do not run finalizers during emergency GC */
-     callallpendingfinalizers(L, 1);
 --- linit.c	Thu Jan 15 17:14:12 1970
 +++ linit.c	Thu Jan 15 17:14:12 1970
-@@ -35,6 +35,7 @@
+@@ -36,6 +36,7 @@
    {LUA_STRLIBNAME, luaopen_string},
    {LUA_BITLIBNAME, luaopen_bit},
    {LUA_MATHLIBNAME, luaopen_math},
-+  {LUA_BUFLIBNAME, luaopen_buffer},
-   {NULL, NULL}
- };
- 
++  {LUA_BUFLIBNAME, luaopen_buffer},  /* lua-lab: */
+ #if defined(LUA_COMPAT_DEBUGLIB)
+   {LUA_DBLIBNAME, luaopen_debug},
+ #endif
 --- llex.c	Thu Jan 15 17:14:12 1970
 +++ llex.c	Thu Jan 15 17:14:12 1970
 @@ -34,11 +34,11 @@
@@ -112,12 +72,12 @@
  /* ORDER RESERVED */
  static const char *const luaX_tokens [] = {
 -    "and", "break", "do", "else", "elseif",
-+    "and", "break", "continue", "do", "else", "elseif",  /* lua-lab patch */
++    "and", "break", "continue", "do", "else", "elseif",  /* lua-lab: */
      "end", "false", "for", "function", "if",
      "in", "local", "nil", "not", "or", "repeat",
      "return", "then", "true", "until", "while",
 -    "..", "...", "==", ">=", "<=", "~=", "<eof>",
-+    "..", "...", "==", ">=", "<=", "~=", "!=", "<eof>",  /* lua-lab patch */
++    "..", "...", "==", ">=", "<=", "~=", "!=", "<eof>",  /* lua-lab: */
      "<number>", "<name>", "<string>"
  };
  
@@ -125,7 +85,7 @@
          if (ls->current != '=') return '>';
          else { next(ls); return TK_GE; }
        }
-+      case '!':
++      case '!':  /* lua-lab: */
        case '~': {
          next(ls);
          if (ls->current != '=') return '~';
@@ -136,27 +96,17 @@
  enum RESERVED {
    /* terminal symbols denoted by reserved words */
 -  TK_AND = FIRST_RESERVED, TK_BREAK,
-+  TK_AND = FIRST_RESERVED, TK_BREAK, TK_CONTINUE,  /* lua-lab patch */
++  TK_AND = FIRST_RESERVED, TK_BREAK, TK_CONTINUE,  /* lua-lab: */
    TK_DO, TK_ELSE, TK_ELSEIF, TK_END, TK_FALSE, TK_FOR, TK_FUNCTION,
    TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
    TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
---- loadlib.c	Thu Jan 15 17:14:12 1970
-+++ loadlib.c	Thu Jan 15 17:14:12 1970
-@@ -129,6 +129,7 @@
- ** =======================================================================
- */
- 
-+#define WIN32_LEAN_AND_MEAN
- #include <windows.h>
- 
- #undef setprogdir
 --- lparser.c	Thu Jan 15 17:14:12 1970
 +++ lparser.c	Thu Jan 15 17:14:12 1970
 @@ -42,6 +42,7 @@
  typedef struct BlockCnt {
    struct BlockCnt *previous;  /* chain */
    int breaklist;  /* list of jumps out of this loop */
-+  int continuelist;  /* list of jumps to the loop's test */  /* lua-lab patch */
++  int continuelist;  /* lua-lab: list of jumps to the loop's test */
    lu_byte nactvar;  /* # active locals outside the breakable structure */
    lu_byte upval;  /* true if some variable in the block is an upvalue */
    lu_byte isbreakable;  /* true if `block' is a loop */
@@ -164,19 +114,18 @@
  
  static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
    bl->breaklist = NO_JUMP;
-+  bl->continuelist = NO_JUMP;  /* lua-lab patch */
++  bl->continuelist = NO_JUMP;  /* lua-lab: */
    bl->isbreakable = isbreakable;
    bl->nactvar = fs->nactvar;
    bl->upval = 0;
-@@ -515,9 +517,16 @@
+@@ -515,9 +517,15 @@
    else  /* ls->t.token == '[' */
      yindex(ls, &key);
    cc->nh++;
 -  checknext(ls, '=');
 -  rkkey = luaK_exp2RK(fs, &key);
 -  expr(ls, &val);
-+  /* lua-lab patch */
-+  if (ls->t.token == '=') {
++  if (ls->t.token == '=') {  /* lua-lab: */
 +    luaX_next(ls);
 +    rkkey = luaK_exp2RK(fs, &key);
 +    expr(ls, &val);
@@ -185,33 +134,32 @@
 +    rkkey = luaK_exp2RK(fs, &key);
 +    init_exp(&val, VTRUE, 0);
 +  }
-   luaK_codeABC(fs, OP_SETTABLE, cc->t->u.s.info, rkkey, luaK_exp2RK(fs, &val));
+   luaK_codeABC(fs, OP_SETTABLE, cc->t->u.info, rkkey, luaK_exp2RK(fs, &val));
    fs->freereg = reg;  /* free registers */
  }
-@@ -1041,11 +1050,11 @@
+@@ -1037,11 +1045,11 @@
  }
  
  
 -static void breakstat (LexState *ls) {
-+static void breakstat (LexState *ls, int n) {  /* lua-lab patch */
++static void breakstat (LexState *ls, int n) {  /* lua-lab: */
    FuncState *fs = ls->fs;
    BlockCnt *bl = fs->bl;
    int upval = 0;
 -  while (bl && !bl->isbreakable) {
-+  while (bl && (!bl->isbreakable || --n)) {  /* lua-lab patch */
++  while (bl && (!bl->isbreakable || --n)) {  /* lua-lab: */
      upval |= bl->upval;
      bl = bl->previous;
    }
-@@ -1057,6 +1066,23 @@
+@@ -1053,6 +1061,22 @@
  }
  
  
-+/* lua-lab patch */
-+static void continuestat (LexState *ls, int n) {  /* lua-lab patch */
++static void continuestat (LexState *ls, int n) {  /* lua-lab: */
 +  FuncState *fs = ls->fs;
 +  BlockCnt *bl = fs->bl;
 +  int upval = 0;
-+  while (bl && (!bl->isbreakable || --n)) {  /* lua-lab patch */
++  while (bl && (!bl->isbreakable || --n)) {
 +    upval |= bl->upval;
 +    bl = bl->previous;
 +  }
@@ -226,82 +174,62 @@
  static void whilestat (LexState *ls, int line) {
    /* whilestat -> WHILE cond DO block END */
    FuncState *fs = ls->fs;
-@@ -1070,6 +1096,7 @@
+@@ -1066,6 +1090,7 @@
    checknext(ls, TK_DO);
    block(ls);
    luaK_jumpto(fs, whileinit);
-+  luaK_patchlist(fs, bl.continuelist, whileinit);  /* continue goes to start, too */  /* lua-lab patch */
++  luaK_patchlist(fs, bl.continuelist, whileinit);  /* lua-lab: continue goes to start, too */
    check_match(ls, TK_END, TK_WHILE, line);
    leaveblock(fs);
    luaK_patchtohere(fs, condexit);  /* false conditions finish the loop */
-@@ -1086,6 +1113,7 @@
+@@ -1082,6 +1107,7 @@
    enterblock(fs, &bl2, 0);  /* scope block */
    luaX_next(ls);  /* skip REPEAT */
    chunk(ls);
-+  luaK_patchtohere(fs, bl1.continuelist);  /* lua-lab patch */
++  luaK_patchtohere(fs, bl1.continuelist);  /* lua-lab: */
    check_match(ls, TK_UNTIL, TK_REPEAT, line);
    condexit = cond(ls);  /* read condition (inside scope block) */
    if (!bl2.upval) {  /* no upvalues? */
-@@ -1093,7 +1121,7 @@
+@@ -1089,7 +1115,7 @@
      luaK_patchlist(fs, condexit, repeat_init);  /* close the loop */
    }
    else {  /* complete semantics when there are upvalues */
 -    breakstat(ls);  /* if condition then break */
-+    breakstat(ls, 1);  /* if condition then break */  /* lua-lab patch */
++    breakstat(ls, 1);  /* lua-lab: if condition then break */
      luaK_patchtohere(ls->fs, condexit);  /* else... */
      leaveblock(fs);  /* finish scope... */
      luaK_jumpto(fs, repeat_init);  /* and repeat */
-@@ -1127,6 +1155,7 @@
+@@ -1123,6 +1149,7 @@
    block(ls);
    leaveblock(fs);  /* end of scope for declared variables */
    luaK_patchtohere(fs, prep);
-+  luaK_patchtohere(fs, bl.previous->continuelist);	/* continue, if any, jumps to here */  /* lua-lab patch */
++  luaK_patchtohere(fs, bl.previous->continuelist);  /* lua-lab: continue, if any, jumps to here */
    if (isnum)  /* numeric for? */
      endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
    else {  /* generic for */
-@@ -1391,8 +1420,14 @@
+@@ -1387,8 +1414,13 @@
      }
      case TK_BREAK: {  /* stat -> breakstat */
        luaX_next(ls);  /* skip BREAK */
 -      breakstat(ls);
-+      breakstat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'break n' */  /* lua-lab patch */
++      breakstat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* lua-lab: multi scope 'break n' */
        return 1;  /* must be last statement */
 +    }
-+    /* lua-lab patch */
-+    case TK_CONTINUE: {  /* stat -> continuestat */
++    case TK_CONTINUE: {  /* lua-lab: stat -> continuestat */
 +      luaX_next(ls);  /* skip CONTINUE */
-+      continuestat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'continue n' */  /* lua-lab patch */
-+      return 1;	  /* must be last statement */
++      continuestat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'continue n' */
++      return 1;	 /* must be last statement */
      }
      default: {  /* stat -> func | assignment */
        exprstat(ls);
 --- lstrlib.c	Thu Jan 15 17:14:12 1970
 +++ lstrlib.c	Thu Jan 15 17:14:12 1970
-@@ -83,7 +83,7 @@
-   const char *s = luaL_checklstring(L, 1, &l);
-   char *p = luaL_buffinitsize(L, &b, l);
-   for (i=0; i<l; i++)
--    p[i] = tolower(uchar(s[i]));
-+    p[i] = (char)tolower(uchar(s[i]));
-   luaL_pushresultsize(&b, l);
-   return 1;
- }
-@@ -96,7 +96,7 @@
-   const char *s = luaL_checklstring(L, 1, &l);
-   char *p = luaL_buffinitsize(L, &b, l);
-   for (i=0; i<l; i++)
--    p[i] = toupper(uchar(s[i]));
-+    p[i] = (char)toupper(uchar(s[i]));
-   luaL_pushresultsize(&b, l);
-   return 1;
- }
-@@ -848,7 +848,15 @@
+@@ -849,7 +849,14 @@
          }
          case 's': {
            size_t l;
 -          const char *s = luaL_checklstring(L, arg, &l);
-+          /* lua-lab patch */
-+          const char *s;
++          const char *s;  /* lua-lab: */
 +          if (!lua_isstring(L, arg)) {
 +            lua_getglobal(L, "tostring");
 +            lua_pushvalue(L, arg);
@@ -312,12 +240,12 @@
            if (!strchr(form, '.') && l >= 100) {
              /* no precision and string is too long to be formatted;
                 keep original string */
-@@ -875,6 +883,93 @@
+@@ -874,6 +881,93 @@
+   return 1;
+ }
  
- /* }====================================================== */
- 
-+/* lua-lab patch */
-+#if defined(LUA_DL_DLL)
++
++#if defined(LUA_DL_DLL)  /* lua-lab: */
 +
 +#define WIN32_LEAN_AND_MEAN
 +#include <windows.h>
@@ -403,15 +331,14 @@
 +
 +#endif
 +
+ /* }====================================================== */
  
- static const luaL_Reg strlib[] = {
-   {"byte", str_byte},
-@@ -892,6 +987,11 @@
+ 
+@@ -893,6 +987,10 @@
    {"reverse", str_reverse},
    {"sub", str_sub},
    {"upper", str_upper},
-+/* lua-lab patch */
-+#if defined(LUA_DL_DLL)
++#if defined(LUA_DL_DLL)  /* lua-lab: */
 +  {"mb2wc", str_mb2wc},
 +  {"wc2mb", str_wc2mb},
 +#endif
@@ -420,91 +347,47 @@
  
 --- lua.h	Thu Jan 15 17:14:12 1970
 +++ lua.h	Thu Jan 15 17:14:12 1970
-@@ -17,7 +17,7 @@
+@@ -18,7 +18,7 @@
  
+ #define LUA_VERSION_MAJOR	"5"
+ #define LUA_VERSION_MINOR	"2"
+-#define LUA_VERSION_RELEASE	"0" " (work4)"
++#define LUA_VERSION_RELEASE	"0" " (work4) (lua-lab patched)"  /* lua-lab: */
  
- #define LUA_VERSION	"Lua 5.2"
--#define LUA_RELEASE	"Lua 5.2.0 (work3)"
-+#define LUA_RELEASE	"Lua 5.2.0 (work3) (lua-lab patched)"
- #define LUA_VERSION_NUM	502
- #define LUA_COPYRIGHT	LUA_RELEASE "  Copyright (C) 1994-2010 Lua.org, PUC-Rio"
- #define LUA_AUTHORS	"R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
-@@ -398,7 +398,10 @@
- };
- 
- /* }====================================================================== */
--
-+
-+#ifdef _MSC_VER
-+#pragma warning(disable:4702)  /* warning C4702: unreachable code */
-+#endif
- 
- /******************************************************************************
- * Copyright (C) 1994-2010 Lua.org, PUC-Rio.  All rights reserved.
+ #define LUA_VERSION	"Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
+ #define LUA_RELEASE	LUA_VERSION "." LUA_VERSION_RELEASE
 --- luaconf.h	Thu Jan 15 17:14:12 1970
 +++ luaconf.h	Thu Jan 15 17:14:12 1970
-@@ -477,7 +477,7 @@
- /*
- @@ luai_hashnum is a macro do hash a lua_Number value into an integer.
- @* The hash must be deterministic and give reasonable values for
--@* both small and large values (outside the range of integers). 
-+@* both small and large values (outside the range of integers).
- @* It is used only in ltable.c.
- */
+@@ -206,9 +206,9 @@
+ #define luai_writestringerror(s,p) \
+ 	(fprintf(stderr, (s), (p)), fflush(stderr))
  
+-
+-
+-
++#ifndef LUA_COMPAT_ALL  /* lua-lab: */
++#define LUA_COMPAT_ALL
++#endif
+ 
+ /*
+ ** {==================================================================
 --- lualib.h	Thu Jan 15 17:14:12 1970
 +++ lualib.h	Thu Jan 15 17:14:12 1970
-@@ -12,8 +12,8 @@
- 
+@@ -13,6 +13,7 @@
  
  /* Key to file-handle type */
--#define LUA_FILEHANDLE		"FILE*"
--
-+#define LUA_FILEHANDLE		"FILE*"
-+#define LUA_BUFFERSTRUCT	"BUFFER"
+ #define LUA_FILEHANDLE		"FILE*"
++#define LUA_BUFFERSTRUCT	"BUFFER"  /* lua-lab: */
  
- #define LUA_COLIBNAME	"coroutine"
+ 
  LUAMOD_API int (luaopen_base) (lua_State *L);
-@@ -41,6 +41,9 @@
+@@ -43,6 +44,9 @@
  
  #define LUA_LOADLIBNAME	"package"
  LUAMOD_API int (luaopen_package) (lua_State *L);
 +
-+#define LUA_BUFLIBNAME	"buffer"
++#define LUA_BUFLIBNAME	"buffer"  /* lua-lab: */
 +LUAMOD_API int (luaopen_buffer) (lua_State *L);
  
  
  /* open all previous libraries */
---- lundump.c	Thu Jan 15 17:14:12 1970
-+++ lundump.c	Thu Jan 15 17:14:12 1970
-@@ -29,8 +29,10 @@
- 
- #ifdef LUAC_TRUST_BINARIES
- #define IF(c,s)
-+#define DO(s)
- #else
- #define IF(c,s)		if (c) error(S,s)
-+#define DO(s)		error(S,s)
- 
- static void error(LoadState* S, const char* why)
- {
-@@ -122,7 +124,7 @@
- 	setsvalue2n(S->L,o,LoadString(S));
- 	break;
-    default:
--	IF (1, "bad constant");
-+	DO ("bad constant");
- 	break;
-   }
-  }
-@@ -142,8 +144,8 @@
-  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
-  for (i=0; i<n; i++)
-  {
--  f->upvalues[i].instack=LoadChar(S);
--  f->upvalues[i].idx=LoadChar(S);
-+  f->upvalues[i].instack=(lu_byte)LoadChar(S);
-+  f->upvalues[i].idx=(lu_byte)LoadChar(S);
-  }
- }
- 
