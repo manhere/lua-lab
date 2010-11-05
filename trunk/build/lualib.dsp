@@ -281,9 +281,5 @@ SOURCE=..\src\lzio.c
 
 SOURCE=..\src\lzio.h
 # End Source File
-# Begin Source File
-
-SOURCE=..\src\print.c
-# End Source File
 # End Target
 # End Project
