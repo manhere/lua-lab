@@ -131,7 +131,7 @@ luaopen_table
 luaopen_io
 luaopen_os
 luaopen_string
-luaopen_bit
+luaopen_bit32
 luaopen_math
 luaopen_debug
 luaopen_package

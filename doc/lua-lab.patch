@@ -1,21 +1,21 @@
 --- lauxlib.c	Thu Jan 15 17:14:12 1970
 +++ lauxlib.c	Thu Jan 15 17:14:12 1970
-@@ -519,6 +519,15 @@
+@@ -549,6 +549,15 @@
  */
- static int skipcomment (FILE *f, int *cp) {
-   int c = *cp = getc(f);
+ static int skipcomment (LoadF *lf, int *cp) {
+   int c = *cp = skipBOM(lf);
 +  if (c == 0xef) {  /* lua-lab: skip UTF-8 BOM */
-+    if (getc(f) != 0xbb) {
-+      fseek(f, -1, SEEK_CUR);
++    if (getc(lf->f) != 0xbb) {
++      fseek(lf->f, -1, SEEK_CUR);
 +    }
-+    else if (getc(f) != 0xbf) {
-+      fseek(f, -2, SEEK_CUR);
++    else if (getc(lf->f) != 0xbf) {
++      fseek(lf->f, -2, SEEK_CUR);
 +    }
-+    else c = *cp = getc(f);
++    else c = *cp = getc(lf->f);
 +  }
    if (c == '#') {  /* first line is a comment (Unix exec. file)? */
-     while ((c = getc(f)) != EOF && c != '\n') ;  /* skip first line */
-     *cp = getc(f);  /* skip end-of-line */
+     while ((c = getc(lf->f)) != EOF && c != '\n') ;  /* skip first line */
+     *cp = getc(lf->f);  /* skip end-of-line */
 --- lctype.c	Thu Jan 15 17:14:12 1970
 +++ lctype.c	Thu Jan 15 17:14:12 1970
 @@ -26,20 +26,20 @@
@@ -59,7 +59,7 @@
 +++ linit.c	Thu Jan 15 17:14:12 1970
 @@ -36,6 +36,7 @@
    {LUA_STRLIBNAME, luaopen_string},
-   {LUA_BITLIBNAME, luaopen_bit},
+   {LUA_BITLIBNAME, luaopen_bit32},
    {LUA_MATHLIBNAME, luaopen_math},
 +  {LUA_BUFLIBNAME, luaopen_buffer},  /* lua-lab: */
  #if defined(LUA_COMPAT_DEBUGLIB)
@@ -81,7 +81,7 @@
      "<number>", "<name>", "<string>"
  };
  
-@@ -438,6 +438,7 @@
+@@ -436,6 +436,7 @@
          if (ls->current != '=') return '>';
          else { next(ls); return TK_GE; }
        }
@@ -118,7 +118,7 @@
    bl->isbreakable = isbreakable;
    bl->nactvar = fs->nactvar;
    bl->upval = 0;
-@@ -515,9 +517,15 @@
+@@ -520,9 +522,15 @@
    else  /* ls->t.token == '[' */
      yindex(ls, &key);
    cc->nh++;
@@ -137,7 +137,7 @@
    luaK_codeABC(fs, OP_SETTABLE, cc->t->u.info, rkkey, luaK_exp2RK(fs, &val));
    fs->freereg = reg;  /* free registers */
  }
-@@ -1037,11 +1045,11 @@
+@@ -1042,11 +1050,11 @@
  }
  
  
@@ -151,9 +151,11 @@
      upval |= bl->upval;
      bl = bl->previous;
    }
-@@ -1053,6 +1061,22 @@
+@@ -1056,7 +1064,23 @@
+     luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
+   luaK_concat(fs, &bl->breaklist, luaK_jump(fs));
  }
- 
++
  
 +static void continuestat (LexState *ls, int n) {  /* lua-lab: */
 +  FuncState *fs = ls->fs;
@@ -170,11 +172,10 @@
 +  luaK_concat(fs, &bl->continuelist, luaK_jump(fs));
 +}
 +
-+
+ 
  static void whilestat (LexState *ls, int line) {
    /* whilestat -> WHILE cond DO block END */
-   FuncState *fs = ls->fs;
-@@ -1066,6 +1090,7 @@
+@@ -1071,6 +1095,7 @@
    checknext(ls, TK_DO);
    block(ls);
    luaK_jumpto(fs, whileinit);
@@ -182,7 +183,7 @@
    check_match(ls, TK_END, TK_WHILE, line);
    leaveblock(fs);
    luaK_patchtohere(fs, condexit);  /* false conditions finish the loop */
-@@ -1082,6 +1107,7 @@
+@@ -1087,6 +1112,7 @@
    enterblock(fs, &bl2, 0);  /* scope block */
    luaX_next(ls);  /* skip REPEAT */
    chunk(ls);
@@ -190,7 +191,7 @@
    check_match(ls, TK_UNTIL, TK_REPEAT, line);
    condexit = cond(ls);  /* read condition (inside scope block) */
    if (!bl2.upval) {  /* no upvalues? */
-@@ -1089,7 +1115,7 @@
+@@ -1094,7 +1120,7 @@
      luaK_patchlist(fs, condexit, repeat_init);  /* close the loop */
    }
    else {  /* complete semantics when there are upvalues */
@@ -199,7 +200,7 @@
      luaK_patchtohere(ls->fs, condexit);  /* else... */
      leaveblock(fs);  /* finish scope... */
      luaK_jumpto(fs, repeat_init);  /* and repeat */
-@@ -1123,6 +1149,7 @@
+@@ -1128,6 +1154,7 @@
    block(ls);
    leaveblock(fs);  /* end of scope for declared variables */
    luaK_patchtohere(fs, prep);
@@ -207,7 +208,7 @@
    if (isnum)  /* numeric for? */
      endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
    else {  /* generic for */
-@@ -1387,8 +1414,13 @@
+@@ -1392,8 +1419,13 @@
      }
      case TK_BREAK: {  /* stat -> breakstat */
        luaX_next(ls);  /* skip BREAK */
@@ -240,10 +241,12 @@
            if (!strchr(form, '.') && l >= 100) {
              /* no precision and string is too long to be formatted;
                 keep original string */
-@@ -874,6 +881,93 @@
+@@ -873,7 +880,94 @@
+   luaL_pushresult(&b);
    return 1;
  }
- 
+-
++
 +
 +#if defined(LUA_DL_DLL)  /* lua-lab: */
 +
@@ -351,14 +354,14 @@
  
  #define LUA_VERSION_MAJOR	"5"
  #define LUA_VERSION_MINOR	"2"
--#define LUA_VERSION_RELEASE	"0" " (work4)"
-+#define LUA_VERSION_RELEASE	"0" " (work4) (lua-lab patched)"  /* lua-lab: */
+-#define LUA_VERSION_RELEASE	"0" " (work5)"
++#define LUA_VERSION_RELEASE	"0" " (work5) (lua-lab patched)"  /* lua-lab: */
  
  #define LUA_VERSION	"Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
  #define LUA_RELEASE	LUA_VERSION "." LUA_VERSION_RELEASE
 --- luaconf.h	Thu Jan 15 17:14:12 1970
 +++ luaconf.h	Thu Jan 15 17:14:12 1970
-@@ -206,9 +206,9 @@
+@@ -214,9 +214,9 @@
  #define luai_writestringerror(s,p) \
  	(fprintf(stderr, (s), (p)), fflush(stderr))
  
