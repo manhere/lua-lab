@@ -1,5 +1,5 @@
 /*
-** $Id: lbitlib.c,v 1.10 2010/10/28 15:17:29 roberto Exp $
+** $Id: lbitlib.c,v 1.13 2010/11/22 18:06:33 roberto Exp $
 ** Standard library for bitwise operations
 ** See Copyright Notice in lua.h
 */
@@ -108,7 +108,7 @@ static int b_rshift (lua_State *L) {
 static int b_arshift (lua_State *L) {
   b_uint r = getuintarg(L, 1);
   int i = luaL_checkint(L, 2);
-  if (i < 0 || !(r & (1 << (NBITS - 1))))
+  if (i < 0 || !(r & ((b_uint)1 << (NBITS - 1))))
     return b_shift(L, r, -i);
   else {  /* arithmetic shift for 'negative' number */
     if (i >= NBITS) r = ALLONES;
@@ -130,27 +130,27 @@ static int b_rot (lua_State *L, int i) {
 }
 
 
-static int b_rol (lua_State *L) {
+static int b_lrot (lua_State *L) {
   return b_rot(L, luaL_checkint(L, 2));
 }
 
 
-static int b_ror (lua_State *L) {
+static int b_rrot (lua_State *L) {
   return b_rot(L, -luaL_checkint(L, 2));
 }
 
 
 static const luaL_Reg bitlib[] = {
-  {"AND", b_and},
-  {"TEST", b_test},
-  {"OR", b_or},
-  {"XOR", b_xor},
-  {"NOT", b_not},
-  {"SHL", b_lshift},
-  {"SAR", b_arshift},
-  {"SHR", b_rshift},
-  {"ROL", b_rol},
-  {"ROR", b_ror},
+  {"arshift", b_arshift},
+  {"band", b_and},
+  {"bnot", b_not},
+  {"bor", b_or},
+  {"bxor", b_xor},
+  {"lrotate", b_lrot},
+  {"lshift", b_lshift},
+  {"rrotate", b_rrot},
+  {"rshift", b_rshift},
+  {"btest", b_test},
   {NULL, NULL}
 };
 

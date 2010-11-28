@@ -18,7 +18,7 @@
 
 #define LUA_VERSION_MAJOR	"5"
 #define LUA_VERSION_MINOR	"2"
-#define LUA_VERSION_RELEASE	"0" " (work5) (lua-lab patched)"  /* lua-lab: */
+#define LUA_VERSION_RELEASE	"0" " (alpha) (lua-lab patched)"  /* lua-lab: */
 
 #define LUA_VERSION	"Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
 #define LUA_RELEASE	LUA_VERSION "." LUA_VERSION_RELEASE

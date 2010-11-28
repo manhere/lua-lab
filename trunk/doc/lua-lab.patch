@@ -1,21 +1,3 @@
---- lauxlib.c	Thu Jan 15 17:14:12 1970
-+++ lauxlib.c	Thu Jan 15 17:14:12 1970
-@@ -549,6 +549,15 @@
- */
- static int skipcomment (LoadF *lf, int *cp) {
-   int c = *cp = skipBOM(lf);
-+  if (c == 0xef) {  /* lua-lab: skip UTF-8 BOM */
-+    if (getc(lf->f) != 0xbb) {
-+      fseek(lf->f, -1, SEEK_CUR);
-+    }
-+    else if (getc(lf->f) != 0xbf) {
-+      fseek(lf->f, -2, SEEK_CUR);
-+    }
-+    else c = *cp = getc(lf->f);
-+  }
-   if (c == '#') {  /* first line is a comment (Unix exec. file)? */
-     while ((c = getc(lf->f)) != EOF && c != '\n') ;  /* skip first line */
-     *cp = getc(lf->f);  /* skip end-of-line */
 --- lctype.c	Thu Jan 15 17:14:12 1970
 +++ lctype.c	Thu Jan 15 17:14:12 1970
 @@ -26,20 +26,20 @@
@@ -57,14 +39,14 @@
  };
 --- linit.c	Thu Jan 15 17:14:12 1970
 +++ linit.c	Thu Jan 15 17:14:12 1970
-@@ -36,6 +36,7 @@
-   {LUA_STRLIBNAME, luaopen_string},
+@@ -37,6 +37,7 @@
    {LUA_BITLIBNAME, luaopen_bit32},
    {LUA_MATHLIBNAME, luaopen_math},
-+  {LUA_BUFLIBNAME, luaopen_buffer},  /* lua-lab: */
- #if defined(LUA_COMPAT_DEBUGLIB)
    {LUA_DBLIBNAME, luaopen_debug},
- #endif
++  {LUA_BUFLIBNAME, luaopen_buffer},  /* lua-lab: */
+   {NULL, NULL}
+ };
+ 
 --- llex.c	Thu Jan 15 17:14:12 1970
 +++ llex.c	Thu Jan 15 17:14:12 1970
 @@ -34,11 +34,11 @@
@@ -155,8 +137,9 @@
      luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
    luaK_concat(fs, &bl->breaklist, luaK_jump(fs));
  }
+-
 +
- 
++
 +static void continuestat (LexState *ls, int n) {  /* lua-lab: */
 +  FuncState *fs = ls->fs;
 +  BlockCnt *bl = fs->bl;
@@ -208,24 +191,25 @@
    if (isnum)  /* numeric for? */
      endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
    else {  /* generic for */
-@@ -1392,8 +1419,13 @@
+@@ -1392,9 +1419,14 @@
      }
      case TK_BREAK: {  /* stat -> breakstat */
        luaX_next(ls);  /* skip BREAK */
 -      breakstat(ls);
 +      breakstat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* lua-lab: multi scope 'break n' */
        return 1;  /* must be last statement */
-+    }
+     }
 +    case TK_CONTINUE: {  /* lua-lab: stat -> continuestat */
 +      luaX_next(ls);  /* skip CONTINUE */
 +      continuestat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'continue n' */
 +      return 1;	 /* must be last statement */
-     }
++    }
      default: {  /* stat -> func | assignment */
        exprstat(ls);
+       return 0;
 --- lstrlib.c	Thu Jan 15 17:14:12 1970
 +++ lstrlib.c	Thu Jan 15 17:14:12 1970
-@@ -849,7 +849,14 @@
+@@ -872,7 +872,14 @@
          }
          case 's': {
            size_t l;
@@ -241,11 +225,10 @@
            if (!strchr(form, '.') && l >= 100) {
              /* no precision and string is too long to be formatted;
                 keep original string */
-@@ -873,7 +880,94 @@
+@@ -896,6 +903,93 @@
    luaL_pushresult(&b);
    return 1;
  }
--
 +
 +
 +#if defined(LUA_DL_DLL)  /* lua-lab: */
@@ -333,11 +316,10 @@
 +}
 +
 +#endif
-+
+ 
  /* }====================================================== */
  
- 
-@@ -893,6 +987,10 @@
+@@ -915,6 +1009,10 @@
    {"reverse", str_reverse},
    {"sub", str_sub},
    {"upper", str_upper},
@@ -354,8 +336,8 @@
  
  #define LUA_VERSION_MAJOR	"5"
  #define LUA_VERSION_MINOR	"2"
--#define LUA_VERSION_RELEASE	"0" " (work5)"
-+#define LUA_VERSION_RELEASE	"0" " (work5) (lua-lab patched)"  /* lua-lab: */
+-#define LUA_VERSION_RELEASE	"0" " (alpha)"
++#define LUA_VERSION_RELEASE	"0" " (alpha) (lua-lab patched)"  /* lua-lab: */
  
  #define LUA_VERSION	"Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
  #define LUA_RELEASE	LUA_VERSION "." LUA_VERSION_RELEASE
