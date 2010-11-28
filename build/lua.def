@@ -91,7 +91,6 @@ luaL_requiref
 luaL_pushmodule
 luaL_getmetafield
 luaL_callmeta
-luaL_typeerror
 luaL_argerror
 luaL_checklstring
 luaL_optlstring
@@ -103,6 +102,7 @@ luaL_checkstack
 luaL_checktype
 luaL_checkany
 luaL_newmetatable
+luaL_setmetatable
 luaL_testudata
 luaL_checkudata
 luaL_where
