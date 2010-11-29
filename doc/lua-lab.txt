@@ -1,4 +1,4 @@
-﻿Lua-Lab (update: 2010-11-05) (based on Lua 5.2.0-work5)
+﻿Lua-Lab (update: 2010-11-29) (based on Lua 5.2.0-alpha)
 
 
 * 原则
@@ -12,7 +12,6 @@
 
 * 特性
 
-- 编译 Lua 源文件时忽略 UTF-8 的 BOM
 - 支持 UTF-8 字符集及部分本地字符集中非单字节字符(每个字节均在 0x80-0xFE 范围)作为标识符
 - 支持 continue 语句, 作用和 C 相同, 可用在 for, while, repeat 循环中使用
 - 支持 break N 和 continue N 语句, 可跳出 N 层循环
