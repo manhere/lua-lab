@@ -414,9 +414,9 @@ static const luaL_Reg bufmeta[] =
 
 LUAMOD_API int luaopen_buffer(lua_State* L)
 {
-	luaL_register(L, LUA_BUFLIBNAME, buflib);
+	luaL_newlib(L, buflib);
 	luaL_newmetatable(L, LUA_BUFFERSTRUCT);
-	luaL_register(L, NULL, bufmeta);
-	lua_setmetatable(L, -2);
+	luaL_setfuncs(L, bufmeta, 0);
+	lua_pop(L, 1);
 	return 1;
 }
