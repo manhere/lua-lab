@@ -49,6 +49,9 @@ LIB32=link.exe -lib
 # Begin Target
 
 # Name "lualib - Win32 Release"
+# Begin Group "lua_core"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\src\lapi.c
@@ -56,26 +59,6 @@ SOURCE=..\src\lapi.c
 # Begin Source File
 
 SOURCE=..\src\lapi.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\lauxlib.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\lauxlib.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\lbaselib.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\lbitlib.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\lbuflib.c
 # End Source File
 # Begin Source File
 
@@ -87,19 +70,11 @@ SOURCE=..\src\lcode.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\lcorolib.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\lctype.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\lctype.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\ldblib.c
 # End Source File
 # Begin Source File
 
@@ -139,14 +114,6 @@ SOURCE=..\src\lgc.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\linit.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\liolib.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\llex.c
 # End Source File
 # Begin Source File
@@ -159,19 +126,11 @@ SOURCE=..\src\llimits.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\lmathlib.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\lmem.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\lmem.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\loadlib.c
 # End Source File
 # Begin Source File
 
@@ -188,10 +147,6 @@ SOURCE=..\src\lopcodes.c
 # Begin Source File
 
 SOURCE=..\src\lopcodes.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\loslib.c
 # End Source File
 # Begin Source File
 
@@ -219,19 +174,11 @@ SOURCE=..\src\lstring.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\lstrlib.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\ltable.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\ltable.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\ltablib.c
 # End Source File
 # Begin Source File
 
@@ -247,15 +194,7 @@ SOURCE=..\include\lua.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\include\lua.hpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\include\luaconf.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\lualib.h
 # End Source File
 # Begin Source File
 
@@ -281,5 +220,74 @@ SOURCE=..\src\lzio.c
 
 SOURCE=..\src\lzio.h
 # End Source File
+# End Group
+# Begin Group "lua_aux"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\src\lauxlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lauxlib.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lbaselib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lbitlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lbuflib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lcorolib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\ldblib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\linit.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\liolib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lmathlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\loadlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\loslib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lstrlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\ltablib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lua.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\lualib.h
+# End Source File
+# End Group
 # End Target
 # End Project

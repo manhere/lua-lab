@@ -1,4 +1,4 @@
-﻿Lua-Lab (update: 2010-11-29) (based on Lua 5.2.0-alpha)
+﻿Lua-Lab (update: 2011-02-11) (based on Lua 5.2.0-alpha)
 
 
 * 原则
@@ -44,3 +44,28 @@
 * 许可(License)
 
 - MIT license, 具体见 readme.html 中的 License
+
+
+* 其它
+
+- 编译 Lua 核心所需C语言运行库的头文件:
+  stddef.h
+  stdarg.h
+  stdlib.h
+  stdio.h
+  string.h
+  assert.h
+  limits.h
+  locale.h
+  setjmp.h
+  float.h
+  math.h
+- 编译 Lua 标准库及独立运行程序所需运行库的头文件:
+  errno.h
+  ctype.h
+  time.h
+  signal.h
+  io.h
+  unistd.h (可选)
+  dlfcn.h (可选)
+  windows.h (可选)
