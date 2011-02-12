@@ -28,6 +28,7 @@
 
 - Visual C++ 6.0: 直接打开工程文件 build/lua.dsw 并编译即可. 支持使用 Visual C++ 2010 编译器
 - Visual Studio 2003+: 打开并自动转换工程 build/lua.dsw 并编译即可
+- MinGW-GCC: 运行 build/make_mingw.bat 即可
 
 
 * 开发者
