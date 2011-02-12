@@ -1,4 +1,4 @@
-﻿Lua-Lab (update: 2011-02-11) (based on Lua 5.2.0-alpha)
+﻿Lua-Lab (update: 2011-02-12) (based on Lua 5.2.0-alpha)
 
 
 * 原则
@@ -27,7 +27,7 @@
 * 编译
 
 - Visual C++ 6.0: 直接打开工程文件 build/lua.dsw 并编译即可. 支持使用 Visual C++ 2010 编译器
-- Visual Studio 2005+: 打开并自动转换工程 build/lua.dsw, 并从各工程中移除 ftol2.* 再编译
+- Visual Studio 2003+: 打开并自动转换工程 build/lua.dsw 并编译即可
 
 
 * 开发者
