@@ -292,7 +292,7 @@
            if (!strchr(form, '.') && l >= 100) {
              /* no precision and string is too long to be formatted;
                 keep original string */
-@@ -896,6 +900,93 @@
+@@ -896,6 +900,92 @@
    luaL_pushresult(&b);
    return 1;
  }
@@ -302,7 +302,6 @@
 +
 +#define WIN32_LEAN_AND_MEAN
 +#include <windows.h>
-+#include "lmem.h"
 +
 +static void pushnilanderror(lua_State* L)
 +{
@@ -334,16 +333,16 @@
 +	}
 +	else
 +	{
-+		WCHAR* const dst = luaM_malloc(L, srclen * sizeof(WCHAR));
++		WCHAR* const dst = malloc(srclen * sizeof(WCHAR));
 +		int dstlen = MultiByteToWideChar((UINT)cp, 0, src, srclen, dst, srclen);
 +		if(dstlen <= 0 && srclen > 0)
 +		{
-+			luaM_free(L, dst);
++			free(dst);
 +			pushnilanderror(L);
 +			return 2;
 +		}
 +		lua_pushlstring(L, (const char*)dst, dstlen * sizeof(WCHAR));
-+		luaM_free(L, dst);
++		free(dst);
 +		return 1;
 +	}
 +}
@@ -368,16 +367,16 @@
 +	}
 +	else
 +	{
-+		char* const dst = luaM_malloc(L, srclen * 3);
++		char* const dst = malloc(srclen * 3);
 +		const int dstlen = WideCharToMultiByte((UINT)cp, 0, (LPCWSTR)src, srclen, dst, srclen * 3, 0, 0);
 +		if(dstlen <= 0 && srclen > 0)
 +		{
-+			luaM_free(L, dst);
++			free(dst);
 +			pushnilanderror(L);
 +			return 2;
 +		}
 +		lua_pushlstring(L, dst, dstlen);
-+		luaM_free(L, dst);
++		free(dst);
 +		return 1;
 +	}
 +}
@@ -386,7 +385,7 @@
  
  /* }====================================================== */
  
-@@ -915,6 +1006,10 @@
+@@ -915,6 +1005,10 @@
    {"reverse", str_reverse},
    {"sub", str_sub},
    {"upper", str_upper},
