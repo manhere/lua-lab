@@ -7,7 +7,6 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lmem.h"
 
 #define INIT_BUFFER_SIZE 16
 
@@ -19,13 +18,13 @@ typedef struct
 }lua_Buffer;
 
 /* L != 0, buffer != 0, len >= 0 */
-static void change_len(lua_State* L, lua_Buffer* buffer, lua_Integer len)
+static void change_len(lua_Buffer* buffer, lua_Integer len)
 {
 	if(len > buffer->cap)
 	{
 		lua_Integer cap = buffer->cap;
 		do cap *= 2; while(cap < len);
-		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
+		buffer->data = realloc(buffer->data, cap);
 		buffer->cap = cap;
 	}
 	buffer->len = len;
@@ -60,7 +59,7 @@ static int buf_new(lua_State* L)
 	if(lua_gettop(L) <= 0)
 	{
 		buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
-		buffer->data = luaM_malloc(L, cap);
+		buffer->data = malloc(cap);
 		buffer->len = 0;
 		buffer->cap = cap;
 		luaL_getmetatable(L, LUA_BUFFERSTRUCT);
@@ -84,7 +83,7 @@ static int buf_new(lua_State* L)
 	convert_pos(n, &i, &j);
 	while(cap < j) cap *= 2;
 	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
-	buffer->data = luaM_malloc(L, cap);
+	buffer->data = malloc(cap);
 	buffer->len = j;
 	buffer->cap = cap;
 	memcpy(buffer->data, src + i, j);
@@ -129,7 +128,7 @@ static int buf_reserve(lua_State* L)
 	if(cap < buffer->len) cap = buffer->len;
 	if(cap != buffer->cap)
 	{
-		buffer->data = luaM_realloc_(L, buffer->data, buffer->cap, cap);
+		buffer->data = realloc(buffer->data, cap);
 		buffer->cap = cap;
 	}
 	lua_pushvalue(L, 1);
@@ -142,7 +141,7 @@ static int buf_resize(lua_State* L)
 	lua_Buffer* buffer = luaL_checkudata(L, 1, LUA_BUFFERSTRUCT);
 	lua_Integer len = luaL_checkinteger(L, 2);
 	if(len < 0) len = 0;
-	change_len(L, buffer, len);
+	change_len(buffer, len);
 	lua_pushvalue(L, 1);
 	return 1;
 }
@@ -180,7 +179,7 @@ static int buf_append(lua_State* L)
 		src = luaL_checklstring(L, 2, &len);
 		srclen = (lua_Integer)len;
 	}
-	change_len(L, buffer, buffer->len + srclen);
+	change_len(buffer, buffer->len + srclen);
 	memcpy(buffer->data + buffer->len - srclen, src, srclen);
 	lua_pushvalue(L, 1);
 	return 1;
@@ -329,7 +328,7 @@ static int buf_concat(lua_State* L)
 	if(buf1) { src1 = buf1->data; len1 = buf1->len; }
 	else	 { src1 = luaL_checklstring(L, 2, &len); len1 = (lua_Integer)len; }
 	buffer = (lua_Buffer*)lua_newuserdata(L, sizeof(lua_Buffer));
-	buffer->data = luaM_malloc(L, buffer->len = buffer->cap = len0 + len1);
+	buffer->data = malloc(buffer->len = buffer->cap = len0 + len1);
 	memcpy(buffer->data, src0, len0);
 	memcpy(buffer->data + len0, src1, len1);
 	luaL_getmetatable(L, LUA_BUFFERSTRUCT);
@@ -367,7 +366,7 @@ static int buf_le(lua_State* L)
 /* buffer.__gc(buffer) */
 static int buf_gc(lua_State* L)
 {
-	luaM_free(L, ((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERSTRUCT))->data);
+	free(((lua_Buffer*)luaL_checkudata(L, 1, LUA_BUFFERSTRUCT))->data);
 	return 0;
 }
 
