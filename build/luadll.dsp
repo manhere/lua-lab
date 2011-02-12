@@ -55,15 +55,7 @@ LINK32=link.exe
 # Name "luadll - Win32 Release"
 # Begin Source File
 
-SOURCE=.\ftol2.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\lua.def
-# End Source File
-# Begin Source File
-
-SOURCE=.\ftol2.obj
 # End Source File
 # End Target
 # End Project

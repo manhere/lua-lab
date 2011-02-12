@@ -729,7 +729,7 @@ static int str_gsub (lua_State *L) {
 ** the previous length
 */
 #if !defined(LUA_INTFRMLEN)	/* { */
-#if defined(LUA_USELONGLONG)
+#if LONG_MAX > INT_MAX
 
 #define LUA_INTFRMLEN           "ll"
 #define LUA_INTFRM_T            long long
@@ -853,11 +853,8 @@ static int str_format (lua_State *L) {
         }
         case 'd':  case 'i':
         case 'o':  case 'u':  case 'x':  case 'X': {
-          lua_Number n = luaL_checknumber(L, arg);
-          LUA_INTFRM_T r = (n < 0) ? (LUA_INTFRM_T)n :
-                                     (LUA_INTFRM_T)(unsigned LUA_INTFRM_T)n;
           addlenmod(form, LUA_INTFRMLEN);
-          nb = sprintf(buff, form, r);
+          nb = sprintf(buff, form, (LUA_INTFRM_T)luaL_checkinteger(L, arg));  /* lua-lab: */
           break;
         }
         case 'e':  case 'E': case 'f':

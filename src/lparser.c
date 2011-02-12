@@ -1417,14 +1417,20 @@ static int statement (LexState *ls) {
       retstat(ls);
       return 1;  /* must be last statement */
     }
-    case TK_BREAK: {  /* stat -> breakstat */
+    case TK_BREAK: {  /* lua-lab: stat -> breakstat */
+	  int n = 1;
       luaX_next(ls);  /* skip BREAK */
-      breakstat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* lua-lab: multi scope 'break n' */
+	  if (testnext(ls, TK_NUMBER))
+		  lua_number2int(n, ls->t.seminfo.r);
+      breakstat(ls, n);  /* multi scope 'break n' */
       return 1;  /* must be last statement */
     }
     case TK_CONTINUE: {  /* lua-lab: stat -> continuestat */
+	  int n = 1;
       luaX_next(ls);  /* skip CONTINUE */
-      continuestat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'continue n' */
+	  if (testnext(ls, TK_NUMBER))
+		  lua_number2int(n, ls->t.seminfo.r);
+      continuestat(ls, n);  /* multi scope 'continue n' */
       return 1;	 /* must be last statement */
     }
     default: {  /* stat -> func | assignment */

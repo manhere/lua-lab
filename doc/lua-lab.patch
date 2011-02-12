@@ -82,6 +82,28 @@
    TK_DO, TK_ELSE, TK_ELSEIF, TK_END, TK_FALSE, TK_FOR, TK_FUNCTION,
    TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
    TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
+--- loslib.c	Thu Jan 15 17:14:12 1970
++++ loslib.c	Thu Jan 15 17:14:12 1970
+@@ -185,7 +185,7 @@
+     
+ static int os_date (lua_State *L) {
+   const char *s = luaL_optstring(L, 1, "%c");
+-  time_t t = luaL_opt(L, (time_t)luaL_checknumber, 2, time(NULL));
++  time_t t = luaL_opt(L, (time_t)luaL_checkinteger, 2, time(NULL));  /* lua-lab: */
+   struct tm *stm;
+   if (*s == '!') {  /* UTC? */
+     stm = gmtime(&t);
+@@ -255,8 +255,8 @@
+ 
+ 
+ static int os_difftime (lua_State *L) {
+-  lua_pushnumber(L, difftime((time_t)(luaL_checknumber(L, 1)),
+-                             (time_t)(luaL_optnumber(L, 2, 0))));
++  lua_pushnumber(L, difftime((time_t)(luaL_checkinteger(L, 1)),  /* lua-lab: */
++                             (time_t)(luaL_optinteger(L, 2, 0))));
+   return 1;
+ }
+ 
 --- lparser.c	Thu Jan 15 17:14:12 1970
 +++ lparser.c	Thu Jan 15 17:14:12 1970
 @@ -42,6 +42,7 @@
@@ -191,17 +213,27 @@
    if (isnum)  /* numeric for? */
      endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
    else {  /* generic for */
-@@ -1392,9 +1419,14 @@
+@@ -1390,11 +1417,22 @@
+       retstat(ls);
+       return 1;  /* must be last statement */
      }
-     case TK_BREAK: {  /* stat -> breakstat */
-       luaX_next(ls);  /* skip BREAK */
+-    case TK_BREAK: {  /* stat -> breakstat */
+-      luaX_next(ls);  /* skip BREAK */
 -      breakstat(ls);
-+      breakstat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* lua-lab: multi scope 'break n' */
++    case TK_BREAK: {  /* lua-lab: stat -> breakstat */
++	  int n = 1;
++      luaX_next(ls);  /* skip BREAK */
++	  if (testnext(ls, TK_NUMBER))
++		  lua_number2int(n, ls->t.seminfo.r);
++      breakstat(ls, n);  /* multi scope 'break n' */
        return 1;  /* must be last statement */
      }
 +    case TK_CONTINUE: {  /* lua-lab: stat -> continuestat */
++	  int n = 1;
 +      luaX_next(ls);  /* skip CONTINUE */
-+      continuestat(ls, testnext(ls, TK_NUMBER) ? (int)ls->t.seminfo.r : 1);  /* multi scope 'continue n' */
++	  if (testnext(ls, TK_NUMBER))
++		  lua_number2int(n, ls->t.seminfo.r);
++      continuestat(ls, n);  /* multi scope 'continue n' */
 +      return 1;	 /* must be last statement */
 +    }
      default: {  /* stat -> func | assignment */
@@ -209,7 +241,29 @@
        return 0;
 --- lstrlib.c	Thu Jan 15 17:14:12 1970
 +++ lstrlib.c	Thu Jan 15 17:14:12 1970
-@@ -872,7 +872,14 @@
+@@ -729,7 +729,7 @@
+ ** the previous length
+ */
+ #if !defined(LUA_INTFRMLEN)	/* { */
+-#if defined(LUA_USELONGLONG)
++#if LONG_MAX > INT_MAX
+ 
+ #define LUA_INTFRMLEN           "ll"
+ #define LUA_INTFRM_T            long long
+@@ -853,11 +853,8 @@
+         }
+         case 'd':  case 'i':
+         case 'o':  case 'u':  case 'x':  case 'X': {
+-          lua_Number n = luaL_checknumber(L, arg);
+-          LUA_INTFRM_T r = (n < 0) ? (LUA_INTFRM_T)n :
+-                                     (LUA_INTFRM_T)(unsigned LUA_INTFRM_T)n;
+           addlenmod(form, LUA_INTFRMLEN);
+-          nb = sprintf(buff, form, r);
++          nb = sprintf(buff, form, (LUA_INTFRM_T)luaL_checkinteger(L, arg));  /* lua-lab: */
+           break;
+         }
+         case 'e':  case 'E': case 'f':
+@@ -872,7 +869,14 @@
          }
          case 's': {
            size_t l;
@@ -225,7 +279,7 @@
            if (!strchr(form, '.') && l >= 100) {
              /* no precision and string is too long to be formatted;
                 keep original string */
-@@ -896,6 +903,93 @@
+@@ -896,6 +900,93 @@
    luaL_pushresult(&b);
    return 1;
  }
@@ -319,7 +373,7 @@
  
  /* }====================================================== */
  
-@@ -915,6 +1009,10 @@
+@@ -915,6 +1006,10 @@
    {"reverse", str_reverse},
    {"sub", str_sub},
    {"upper", str_upper},
