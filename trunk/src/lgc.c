@@ -656,8 +656,8 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
       if (gch(curr)->tt == LUA_TTHREAD)
         sweepthread(L, gco2th(curr));  /* sweep thread's upvalues */
       if (testbits(marked, tostop)) {
-        static GCObject *nullp = NULL;
-        return &nullp;  /* stop sweeping this list */
+        static GCObject *const nullp = NULL;  /* lua-lab: */
+        return (GCObject**)&nullp;  /* stop sweeping this list */
       }
       /* update marks */
       gch(curr)->marked = cast_byte((marked & toclear) | toset);
