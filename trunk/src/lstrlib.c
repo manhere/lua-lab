@@ -906,7 +906,6 @@ static int str_format (lua_State *L) {
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "lmem.h"
 
 static void pushnilanderror(lua_State* L)
 {
@@ -938,16 +937,16 @@ static int str_mb2wc(lua_State* L)	/* str_dst, errmsg = mb2wc(str_src, num_codep
 	}
 	else
 	{
-		WCHAR* const dst = luaM_malloc(L, srclen * sizeof(WCHAR));
+		WCHAR* const dst = malloc(srclen * sizeof(WCHAR));
 		int dstlen = MultiByteToWideChar((UINT)cp, 0, src, srclen, dst, srclen);
 		if(dstlen <= 0 && srclen > 0)
 		{
-			luaM_free(L, dst);
+			free(dst);
 			pushnilanderror(L);
 			return 2;
 		}
 		lua_pushlstring(L, (const char*)dst, dstlen * sizeof(WCHAR));
-		luaM_free(L, dst);
+		free(dst);
 		return 1;
 	}
 }
@@ -972,16 +971,16 @@ static int str_wc2mb(lua_State* L)	/* str_dst, errmsg = wc2mb(str_src, num_codep
 	}
 	else
 	{
-		char* const dst = luaM_malloc(L, srclen * 3);
+		char* const dst = malloc(srclen * 3);
 		const int dstlen = WideCharToMultiByte((UINT)cp, 0, (LPCWSTR)src, srclen, dst, srclen * 3, 0, 0);
 		if(dstlen <= 0 && srclen > 0)
 		{
-			luaM_free(L, dst);
+			free(dst);
 			pushnilanderror(L);
 			return 2;
 		}
 		lua_pushlstring(L, dst, dstlen);
-		luaM_free(L, dst);
+		free(dst);
 		return 1;
 	}
 }
